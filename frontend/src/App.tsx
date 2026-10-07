@@ -25,6 +25,7 @@ function App() {
   const [monthlyData, setMonthlyData] = useState<MonthlyDataPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [retryAttempt, setRetryAttempt] = useState(0);
 
   useEffect(() => {
     fetchFinancialData()
@@ -40,7 +41,7 @@ function App() {
       .finally(() => {
         setLoading(false);
       });
-  }, []);
+  }, [retryAttempt]);
 
   return (
     <main className="dark min-h-screen bg-background text-foreground">
@@ -48,23 +49,46 @@ function App() {
         <div className="flex flex-col gap-8">
           <DashboardHeader />
 
-          {error ? (
-            <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-foreground">
-              {error}
-            </div>
+          {loading ? (
+            <p className="sr-only" role="status" aria-live="polite">
+              Loading financial data
+            </p>
           ) : null}
 
-          <section aria-label="Key performance indicators">
-            <KPIRow metrics={metrics} loading={loading} />
-          </section>
+          {error ? (
+            <div
+              role="alert"
+              className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive-foreground"
+            >
+              <p lang="es">{error}</p>
+              <button
+                type="button"
+                className="mt-3 min-h-11 rounded-md border border-current px-4 font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                onClick={() => {
+                  setError(null);
+                  setLoading(true);
+                  setRetryAttempt((attempt) => attempt + 1);
+                }}
+              >
+                Retry
+              </button>
+            </div>
+          ) : (
+            <>
+              <section aria-label="Key performance indicators" aria-busy={loading}>
+                <KPIRow metrics={metrics} loading={loading} />
+              </section>
 
-          <section
-            aria-label="Financial charts"
-            className="grid grid-cols-1 gap-4 xl:grid-cols-2"
-          >
-            <IncomeOutcomeChart data={monthlyData} loading={loading} />
-            <ProfitPercentChart data={monthlyData} loading={loading} />
-          </section>
+              <section
+                aria-label="Financial charts"
+                aria-busy={loading}
+                className="grid grid-cols-1 gap-4 xl:grid-cols-2"
+              >
+                <IncomeOutcomeChart data={monthlyData} loading={loading} />
+                <ProfitPercentChart data={monthlyData} loading={loading} />
+              </section>
+            </>
+          )}
         </div>
       </div>
     </main>
