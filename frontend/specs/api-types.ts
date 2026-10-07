@@ -21,15 +21,15 @@ export interface FacetsResponse {
    */
   categories: Category[]
 
-  /** Fecha más antigua disponible en el dataset. Formato válido: YYYY-MM-DD; observada: '2025-10-02'.
+  /** Fecha más antigua del conjunto filtrado. Formato YYYY-MM-DD; null cuando no hay movimientos.
    * @see GET /api/metrics/facets
    */
-  min_date: string
+  min_date: string | null
 
-  /** Fecha más reciente disponible en el dataset. Formato válido: YYYY-MM-DD; observada: '2026-09-28'.
+  /** Fecha más reciente del conjunto filtrado. Formato YYYY-MM-DD; null cuando no hay movimientos.
    * @see GET /api/metrics/facets
    */
-  max_date: string
+  max_date: string | null
 }
 
 /** Una anomalía de gasto agregada en un período.
@@ -46,7 +46,7 @@ export interface AlertEntry {
    */
   outcome_total: number
 
-  /** Media base usada para comparar el gasto. Valores válidos: número; rango no declarado; ejemplo observado: 51174.1.
+  /** Media del gasto de los tres períodos calendario inmediatamente anteriores. Número positivo para una alerta; dos decimales en la respuesta.
    * @see GET /api/metrics/alerts
    */
   baseline_average: number
@@ -98,3 +98,21 @@ export interface TopCategoriesResponse extends Array<CategoryEntry> {
 }
 
 // TODO: `test_flag` está marcado como ficticio en verification.md; no forma parte del contrato.
+
+/** Total de ingresos de una línea de negocio para el rango solicitado. */
+export interface IncomeTotalEntry {
+  /** Línea de negocio. Valores válidos: 'B2B', 'B2C'.
+   * @see GET /api/metrics/income/totals
+   */
+  business_type: BusinessType
+
+  /** Suma de todos los ingresos del grupo, sin límite de categorías; número con dos decimales, cero si no hay ingresos.
+   * @see GET /api/metrics/income/totals
+   */
+  total_income: number
+}
+
+/** Exactamente dos entradas: B2B y después B2C, incluso con ingresos cero.
+ * @see GET /api/metrics/income/totals
+ */
+export type IncomeTotalsResponse = [IncomeTotalEntry, IncomeTotalEntry]
