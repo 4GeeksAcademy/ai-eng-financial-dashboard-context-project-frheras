@@ -49,6 +49,22 @@ If you need to target a different backend origin, copy `frontend/.env.example` t
 - Backend: http://localhost:8000
 - API documentation: http://localhost:8000/docs
 
+### Frontend outside Docker
+
+If the Vite proxy returns a 502 or times out between containers, keep the backend in Docker and run Vite directly in Codespaces or your local environment:
+
+```bash
+docker compose stop frontend
+docker compose up --build -d backend
+cd frontend
+npm ci
+npm run dev -- --host 0.0.0.0 --port 5173 --strictPort
+```
+
+The local proxy defaults to `http://127.0.0.1:8000`. Compose sets `API_PROXY_TARGET=http://backend:8000` for its frontend container. To use another proxy destination, set `API_PROXY_TARGET` in the environment of the process starting Vite; this is a server variable, not a browser-facing URL.
+
+Leave `VITE_API_BASE_URL` unset to request `/api` through the same-origin proxy. In Codespaces, open the forwarded URL for port 5173 from the Ports tab. To return to an all-Docker setup, stop local Vite with Ctrl+C before running `docker compose up --build`.
+
 ---
 
 This and many other projects are built by students as part of the [Career Programs](https://4geeksacademy.com/compare-programs) at [4Geeks Academy](https://4geeksacademy.com). By [@marcogonzalo](https://github.com/marcogonzalo) and [other contributors](https://github.com/4GeeksAcademy/ai-eng-financial-dashboard-context-project/graphs/contributors). Find out more about [AI Engineering](https://4geeksacademy.com/en/coding-bootcamps/ai-engineering), [Data Science & Machine Learning](https://4geeksacademy.com/en/coding-bootcamps/data-science-ml), [Cybersecurity](https://4geeksacademy.com/en/coding-bootcamps/cybersecurity) and [Full-Stack Software Developer with AI](https://4geeksacademy.com/en/coding-bootcamps/full-stack-developer).
