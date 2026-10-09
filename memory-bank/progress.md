@@ -29,3 +29,9 @@ El repositorio contiene un dashboard React/TypeScript, una API FastAPI y configu
 No se encontró en la documentación/configuración del repositorio un roadmap aprobado, responsables ni fechas objetivo. [findings.md](../findings.md) contiene reglas y recomendaciones técnicas; no son tareas planificadas ni compromisos. La deuda anterior resume comportamientos verificables, sin ordenarlos como hoja de ruta.
 
 No se verificó el arranque Docker ni los comandos de test, lint y build del frontend. Los scripts existen en [frontend/package.json](../frontend/package.json); la guía recomienda `docker compose up --build` pero eso no acredita que se haya ejecutado con éxito ([README.es.md](../README.es.md)).
+
+## Registro de skills
+
+| Skill | Fuente | Hallazgos aceptados | Hallazgos rechazados (y por qué) | Evidencia |
+|---|---|---:|---|---|
+| accessibility | nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max | 7 | 0; no se rechazaron hallazgos. Las pautas nativas y de formularios se consideraron no aplicables a este dashboard web sin formularios. | `npm run lint`, `npm run build` y `npm test` pasan (5 tests); Lighthouse y pruebas manuales con lector de pantalla no ejecutadas. |
