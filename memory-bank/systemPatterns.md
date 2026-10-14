@@ -19,8 +19,6 @@ El backend define los movimientos y los demás modelos de respuesta con Pydantic
 
 La API incluye `/health`, `/api/metrics`, facets, resumen, categorías principales, comparación, alertas y rutas B2B/B2C ([backend/app/routes.py](../backend/app/routes.py)). La pantalla `App` solo solicita `/api/metrics`; no debe asumirse que las otras rutas participan en su flujo actual ([frontend/src/App.tsx](../frontend/src/App.tsx)).
 
-El contrato del backend se conserva en la versión base del ejercicio: `/api/metrics/facets` devuelve facetas globales sin filtros; no existe `/api/metrics/income/totals`. Los totales de ingresos y categorías por grupo se pueden derivar en frontend desde `/api/metrics/b2b` y `/api/metrics/b2c`. `/api/metrics/alerts` filtra movimientos por fechas antes de resumir y usa como baseline la media de todos los períodos previos presentes; para la media de exactamente tres períodos que pide el PM, el frontend debe cargar el histórico completo y calcularla allí.
-
 ## Comportamientos que afectan al flujo
 
 - Cada handler de métricas vuelve a generar datos con `seed=42`; la función llama a `random.seed`, por lo que modifica el RNG global del proceso ([backend/app/routes.py](../backend/app/routes.py)).

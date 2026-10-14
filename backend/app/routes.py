@@ -31,8 +31,13 @@ class MetricsFacets(BaseModel):
     operation_types: list[OperationType]
     business_types: list[BusinessType]
     categories: list[Category]
-    min_date: date
-    max_date: date
+    min_date: date | None
+    max_date: date | None
+
+
+class IncomeTotal(BaseModel):
+    business_type: BusinessType
+    total_income: float
 
 
 class MetricsSummaryItem(BaseModel):
@@ -153,8 +158,8 @@ def build_metrics_facets(movements: list[FinancialMovement]) -> MetricsFacets:
         operation_types=sorted({item.operation_type for item in ordered}),
         business_types=sorted({item.business_type for item in ordered}),
         categories=sorted({item.category for item in ordered}),
-        min_date=ordered[0].create_date,
-        max_date=ordered[-1].create_date,
+        min_date=ordered[0].create_date if ordered else None,
+        max_date=ordered[-1].create_date if ordered else None,
     )
 
 
@@ -223,8 +228,8 @@ def detect_outcome_alerts(
     alerts: list[MetricsAlert] = []
     historical_outcomes: list[float] = []
     for item in summary:
-        if historical_outcomes:
-            baseline = sum(historical_outcomes) / len(historical_outcomes)
+        if len(historical_outcomes) >= 3:
+            baseline = sum(historical_outcomes[-3:]) / 3
             if baseline > 0:
                 increase_ratio = (item.outcome - baseline) / baseline
                 if increase_ratio > threshold:
@@ -238,6 +243,54 @@ def detect_outcome_alerts(
                     )
         historical_outcomes.append(item.outcome)
     return alerts
+
+
+def period_start(value: date, group_by: GroupBy) -> date:
+    if group_by == "month":
+        return value.replace(day=1)
+    if group_by == "week":
+        return value - timedelta(days=value.weekday())
+    return value
+
+
+def next_period(value: date, group_by: GroupBy) -> date:
+    if group_by == "month":
+        return (value.replace(day=28) + timedelta(days=4)).replace(day=1)
+    return value + timedelta(days=7 if group_by == "week" else 1)
+
+
+def build_alert_summary(
+    movements: list[FinancialMovement], group_by: GroupBy,
+) -> list[MetricsSummaryItem]:
+    if not movements:
+        return []
+    summary = summarize_movements(movements, group_by)
+    by_period = {item.period: item for item in summary}
+    current = period_start(min(item.create_date for item in movements), group_by)
+    last = period_start(max(item.create_date for item in movements), group_by)
+    complete: list[MetricsSummaryItem] = []
+    while current <= last:
+        if group_by == "month":
+            label = current.strftime("%Y-%m")
+        elif group_by == "week":
+            iso_year, iso_week, _ = current.isocalendar()
+            label = f"{iso_year}-W{iso_week:02d}"
+        else:
+            label = current.isoformat()
+        complete.append(by_period.get(label, MetricsSummaryItem(
+            period=label, income=0, outcome=0, net=0,
+        )))
+        current = next_period(current, group_by)
+    return complete
+
+
+def alert_period_start(period: str, group_by: GroupBy) -> date:
+    if group_by == "month":
+        return date.fromisoformat(f"{period}-01")
+    if group_by == "week":
+        iso_year, iso_week = period.split("-W")
+        return date.fromisocalendar(int(iso_year), int(iso_week), 1)
+    return date.fromisoformat(period)
 
 
 @router.get("/health")
@@ -260,9 +313,36 @@ def get_metrics(
 
 
 @router.get("/api/metrics/facets", response_model=MetricsFacets)
-def get_metrics_facets() -> MetricsFacets:
+def get_metrics_facets(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+    business_type: BusinessType | None = Query(default=None),
+    operation_type: OperationType | None = Query(default=None),
+) -> MetricsFacets:
     movements = generate_mock_movements(seed=42)
-    return build_metrics_facets(movements)
+    if business_type is not None:
+        movements = [item for item in movements if item.business_type == business_type]
+    filtered = filter_movements(
+        movements, start_date, end_date, category=None, operation_type=operation_type,
+    )
+    return build_metrics_facets(filtered)
+
+
+@router.get("/api/metrics/income/totals", response_model=list[IncomeTotal])
+def get_income_totals(
+    start_date: date | None = Query(default=None),
+    end_date: date | None = Query(default=None),
+) -> list[IncomeTotal]:
+    movements = filter_movements(
+        generate_mock_movements(seed=42), start_date, end_date,
+        category=None, operation_type="income",
+    )
+    return [
+        IncomeTotal(business_type=business_type, total_income=round(sum(
+            item.amount for item in movements if item.business_type == business_type
+        ), 2))
+        for business_type in ("B2B", "B2C")
+    ]
 
 
 @router.get("/api/metrics/summary", response_model=list[MetricsSummaryItem])
@@ -341,7 +421,7 @@ def get_metrics_comparison(
 
 @router.get("/api/metrics/alerts", response_model=list[MetricsAlert])
 def get_metrics_alerts(
-    threshold: float = Query(default=0.3, ge=0),
+    threshold: float = Query(default=0.3, ge=0.01, le=1.0),
     group_by: GroupBy = Query(default="month"),
     start_date: date | None = Query(default=None),
     end_date: date | None = Query(default=None),
@@ -352,11 +432,15 @@ def get_metrics_alerts(
         movements = [
             item for item in movements if item.business_type == business_type]
 
-    filtered = filter_movements(
-        movements, start_date, end_date, category=None, operation_type=None
-    )
-    summary = summarize_movements(filtered, group_by)
-    return detect_outcome_alerts(summary, threshold)
+    summary = build_alert_summary(movements, group_by)
+    alerts = detect_outcome_alerts(summary, threshold)
+    return [
+        item for item in alerts
+        if (end_date is None or alert_period_start(item.period, group_by) <= end_date)
+        and (start_date is None or next_period(
+            alert_period_start(item.period, group_by), group_by
+        ) > start_date)
+    ]
 
 
 @router.get("/api/metrics/b2b", response_model=list[FinancialMovement])
