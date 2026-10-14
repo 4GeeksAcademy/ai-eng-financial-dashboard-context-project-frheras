@@ -2,7 +2,7 @@ export type OperationType = 'income' | 'outcome'
 export type BusinessType = 'B2B' | 'B2C'
 export type Category = 'suppliers' | 'sales' | 'operational' | 'administrative' | 'others'
 
-/** Facetas disponibles para filtrar los movimientos financieros.
+/** Facetas globales disponibles para los movimientos financieros.
  * @see GET /api/metrics/facets
  */
 export interface FacetsResponse {
@@ -21,15 +21,15 @@ export interface FacetsResponse {
    */
   categories: Category[]
 
-  /** Fecha más antigua del conjunto filtrado. Formato YYYY-MM-DD; null cuando no hay movimientos.
+  /** Fecha más antigua del conjunto. Formato YYYY-MM-DD.
    * @see GET /api/metrics/facets
    */
-  min_date: string | null
+  min_date: string
 
-  /** Fecha más reciente del conjunto filtrado. Formato YYYY-MM-DD; null cuando no hay movimientos.
+  /** Fecha más reciente del conjunto. Formato YYYY-MM-DD.
    * @see GET /api/metrics/facets
    */
-  max_date: string | null
+  max_date: string
 }
 
 /** Una anomalía de gasto agregada en un período.
@@ -46,7 +46,7 @@ export interface AlertEntry {
    */
   outcome_total: number
 
-  /** Media del gasto de los tres períodos calendario inmediatamente anteriores. Número positivo para una alerta; dos decimales en la respuesta.
+  /** Media del gasto de los períodos anteriores presentes en el resumen filtrado; no necesariamente son tres períodos. Número positivo para una alerta; dos decimales en la respuesta.
    * @see GET /api/metrics/alerts
    */
   baseline_average: number
@@ -98,21 +98,3 @@ export interface TopCategoriesResponse extends Array<CategoryEntry> {
 }
 
 // TODO: `test_flag` está marcado como ficticio en verification.md; no forma parte del contrato.
-
-/** Total de ingresos de una línea de negocio para el rango solicitado. */
-export interface IncomeTotalEntry {
-  /** Línea de negocio. Valores válidos: 'B2B', 'B2C'.
-   * @see GET /api/metrics/income/totals
-   */
-  business_type: BusinessType
-
-  /** Suma de todos los ingresos del grupo, sin límite de categorías; número con dos decimales, cero si no hay ingresos.
-   * @see GET /api/metrics/income/totals
-   */
-  total_income: number
-}
-
-/** Exactamente dos entradas: B2B y después B2C, incluso con ingresos cero.
- * @see GET /api/metrics/income/totals
- */
-export type IncomeTotalsResponse = [IncomeTotalEntry, IncomeTotalEntry]

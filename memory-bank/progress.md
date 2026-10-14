@@ -8,6 +8,7 @@ El repositorio contiene un dashboard React/TypeScript, una API FastAPI y configu
 
 - El endpoint `GET /health` responde `{"status":"ok"}` según su implementación y prueba ([backend/app/routes.py](../backend/app/routes.py), [backend/tests/test_routes.py](../backend/tests/test_routes.py)).
 - La suite backend se ejecutó el 2026-10-03 en Python 3.11.14: `15 passed`. La ejecución usó un entorno temporal porque el `.venv` local estaba usando Python 3.9.6 y falló al importar la anotación `float | None` de `backend/app/routes.py`. El repositorio no declara una versión mínima de Python; el Dockerfile usa Python 3.13 ([backend/Dockerfile](../backend/Dockerfile), [backend/requirements.txt](../backend/requirements.txt)). El resultado y las versiones son observaciones de esa ejecución, no una garantía de CI.
+- El 2026-10-14 se restauraron `backend/app/routes.py` y `backend/tests/test_routes.py` al contrato del commit base `82c8d2f`, dejando las specs separadas del backend. `pytest -q tests/test_routes.py` pasó: 15 pruebas en Python 3.14.2; aparece una advertencia de deprecación de Starlette/httpx.
 - La prueba mostró una advertencia de deprecación de Starlette TestClient con la versión de httpx instalada; el resultado de la suite fue exitoso ([backend/requirements.txt](../backend/requirements.txt), [backend/tests/test_routes.py](../backend/tests/test_routes.py)).
 - El frontend tiene tests de funciones de cálculo/formato en Vitest ([frontend/src/lib/financial-utils.test.ts](../frontend/src/lib/financial-utils.test.ts)). No hay en ese archivo pruebas de montaje de `App` ni del flujo HTTP ([frontend/src/App.tsx](../frontend/src/App.tsx)).
 - El periodo fijo `2024 - Full Year` fue reemplazado por `Previous 12 Months`, valor por defecto del encabezado ([frontend/src/App.tsx](../frontend/src/App.tsx), [frontend/src/components/dashboard/dashboard-header.tsx](../frontend/src/components/dashboard/dashboard-header.tsx)).
@@ -29,3 +30,9 @@ El repositorio contiene un dashboard React/TypeScript, una API FastAPI y configu
 No se encontró en la documentación/configuración del repositorio un roadmap aprobado, responsables ni fechas objetivo. [findings.md](../findings.md) contiene reglas y recomendaciones técnicas; no son tareas planificadas ni compromisos. La deuda anterior resume comportamientos verificables, sin ordenarlos como hoja de ruta.
 
 No se verificó el arranque Docker ni los comandos de test, lint y build del frontend. Los scripts existen en [frontend/package.json](../frontend/package.json); la guía recomienda `docker compose up --build` pero eso no acredita que se haya ejecutado con éxito ([README.es.md](../README.es.md)).
+
+## Registro de skills
+
+| Skill | Fuente | Hallazgos aceptados | Hallazgos rechazados (y por qué) | Evidencia |
+|---|---|---:|---|---|
+| accessibility | nextlevelbuilder/ui-ux-pro-max-skill@ui-ux-pro-max | 7 | 0; no se rechazaron hallazgos. Las pautas nativas y de formularios se consideraron no aplicables a este dashboard web sin formularios. | `npm run lint`, `npm run build` y `npm test` pasan (5 tests); Lighthouse y pruebas manuales con lector de pantalla no ejecutadas. |
